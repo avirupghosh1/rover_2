@@ -112,7 +112,7 @@
           link="steering1" />
         <axis
           xyz="0 0 1" />
-        <limit effort="5" velocity="6.28"  lower="-1.57" upper="1.57" />
+        <limit effort="10" velocity="6.28"  lower="-1.57" upper="1.57" />
       </joint>
       <link
         name="wheel1">
@@ -149,9 +149,8 @@
             xyz="0 0 0"
             rpy="0 0 0" />
           <geometry>
-            <mesh
-              filename="package://rover_description/meshes/wheel1.STL" />
-          </geometry>
+				        <cylinder radius="0.11" length="0.144"/>
+			   </geometry>
         </collision>
       </link>
       <joint
@@ -219,7 +218,7 @@
           link="steering2" />
         <axis
           xyz="0 0 1" />
-        <limit effort="5" velocity="6.28"  lower="-1.57" upper="1.57" />
+        <limit effort="10" velocity="6.28"  lower="-1.57" upper="1.57" />
       </joint>
       <link
         name="wheel2">
@@ -256,9 +255,8 @@
             xyz="0 0 0"
             rpy="0 0 0" />
           <geometry>
-            <mesh
-              filename="package://rover_description/meshes/wheel2.STL" />
-          </geometry>
+				        <cylinder radius="0.11" length="0.144"/>
+			   </geometry>
         </collision>
       </link>
       <joint
@@ -326,7 +324,7 @@
           link="steeering3" />
         <axis
           xyz="0 0 1" />
-        <limit effort="5" velocity="6.28"  lower="-1.57" upper="1.57" />
+        <limit effort="10" velocity="6.28"  lower="-1.57" upper="1.57" />
       </joint>
       <link
         name="wheel3">
@@ -363,9 +361,8 @@
             xyz="0 0 0"
             rpy="0 0 0" />
           <geometry>
-            <mesh
-              filename="package://rover_description/meshes/wheel3.STL" />
-          </geometry>
+				        <cylinder radius="0.11" length="0.144"/>
+			   </geometry>
         </collision>
       </link>
       <joint
@@ -433,7 +430,7 @@
           link="steering4" />
         <axis
           xyz="0 0 1" />
-        <limit effort="5" velocity="6.28"  lower="-1.57" upper="1.57" />
+        <limit effort="10" velocity="6.28"  lower="-1.57" upper="1.57" />
       </joint>
       <link
         name="wheel4">
@@ -456,6 +453,7 @@
             xyz="0 0 0"
             rpy="0 0 0" />
           <geometry>
+            
             <mesh
               filename="package://rover_description/meshes/wheel4.STL" />
           </geometry>
@@ -470,9 +468,8 @@
             xyz="0 0 0"
             rpy="0 0 0" />
           <geometry>
-            <mesh
-              filename="package://rover_description/meshes/wheel4.STL" />
-          </geometry>
+				        <cylinder radius="0.11" length="0.144"/>
+			   </geometry>
         </collision>
       </link>
       <joint
