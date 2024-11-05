@@ -27,12 +27,10 @@
       <remap from="/gps/fix" to="/gps/fix"/>
       <remap from="/imu/data" to="/imu/data"/>
       <remap from="/odometry/gps" to="/odometry/gps"/>
+      <remap from="/odometry/filtered" to="/odometry/filtered/local"/>
       <rosparam command="load" file="$(find rover_control)/config/navsat_transform.yaml" />
     </node>
-    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_global">
-      <remap from="/odometry/filtered" to="/odometry/filtered/global"/>
-      <rosparam command="load" file="$(find rover_control)/config/gps_localization.yaml" />
-    </node>
+    
   </group> 
 
   <node pkg="interactive_marker_twist_server" type="marker_server" name="twist_marker_server" output="screen">

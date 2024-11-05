@@ -590,7 +590,7 @@
 <joint name="camera_optical_joint" type="fixed">
   <parent link="camera_link"/>
   <child link="camera_optical_link"/>
-  <origin xyz="0.1 0 0.1" rpy="-1.57 0 -1.57"/> <!-- Adjust position as needed -->
+  <origin xyz="0 0 0" rpy="-1.57 0 -1.57"/> <!-- Adjust position as needed -->
 </joint>
 <joint name="camera_joint" type="fixed">
   <parent link="chassis"/>
