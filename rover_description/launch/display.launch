@@ -4,11 +4,7 @@
   <param
     name="robot_description"
     textfile="$(find rover_description)/urdf/rover_description.urdf" />
-  <node
-    name="joint_state_publisher_gui"
-    pkg="joint_state_publisher_gui"
-    type="joint_state_publisher_gui"
-    respawn="true" />
+  
  
   <node
     name="rviz"
