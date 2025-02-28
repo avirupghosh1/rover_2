@@ -5,7 +5,9 @@ import sys
 import rospy
 import cv2
 import tf
-from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import PoseStamped, Point
+
 import numpy as np
 from std_msgs.msg import Bool, String
 from sensor_msgs.msg import Image, CameraInfo
@@ -37,14 +39,27 @@ class image_converter:
     self.AR               = rospy.Publisher("AR",Bool,queue_size=1)
     self.between_pub      = rospy.Publisher("/move_base_simple/goal",PoseStamped,queue_size=1)
     self.bridge           = CvBridge()
-
+    self.current_position = None
+    self.AR_ = rospy.Subscriber('/AR', Bool, self.ar_callback)
     self.image_sub        = rospy.Subscriber("/camera/color/image_raw",Image,self.callback)
-    
+    self.odom_subscriber = rospy.Subscriber('/odometry/filtered/local', Odometry, self.odom_callback)
+    self.ar_active=False
+  def odom_callback(self, msg):
+    self.current_position = msg.pose.pose.position
+
+  def calculate_distance(self, pos1, pos2):
+    return np.sqrt((pos1.x - pos2.x)**2 + (pos1.y - pos2.y)**2 + (pos1.z - pos2.z)**2)
+
+  def ar_callback(self, msg):
+  
+   self.ar_active = msg.data  # Update the status of AR 
 
   def callback(self,data):
     matrix_coefficients = np.array([[1662.764073573561, 0, 960.5],
               [0, 1662.764073573561, 540.5],
               [0, 0, 1]])
+
+          
 
 # Distortion Coefficients
     distortion_coefficients = np.array([1e-08, 1e-08, 1e-08, 1e-08, 1e-08])
@@ -99,7 +114,7 @@ class image_converter:
           quaternion = tf.transformations.quaternion_from_matrix(rotation_matrix)
           
 
-          if mode == "P" and found == False:  
+          if mode == "P" and self.ar_active!=True:  
             print(found)
             self.publishPostPose(tvec[0][0][0],tvec[0][0][1],tvec[0][0][2],quaternion[0],quaternion[1],quaternion[2],quaternion[3])
 
@@ -143,53 +158,73 @@ class image_converter:
 
     self.drawMarker(corners,ids,cv_image=cv_image)
 
-  def publishPostPose(self,pX, pY,pZ, oX,oY,oZ, oW):
-    global postPose
-    found = True
-    
-    postPose = PoseStamped()
-    postPose.header.frame_id = "camera_link"
-    postPose.pose.position.x = pZ 
-    postPose.pose.position.y = pX 
-    postPose.pose.position.z = 0
-   
-    postPose.pose.orientation.x = 0
-    postPose.pose.orientation.y = 0
-    postPose.pose.orientation.z = oZ
-    postPose.pose.orientation.w = oW 
-            
-    try:
-        listener = tf.TransformListener()
-        listener.waitForTransform('odom', 'camera_link', rospy.Time(0), rospy.Duration(1.0))
-        transformed_pose = listener.transformPose('odom', postPose)
-        print('\n')
-        print([transformed_pose.pose.position.x, transformed_pose.pose.position.y])
-        print('\n')
-        
-        # Now publish the transformed pose in the odom frame
-        self.between_pub.publish(transformed_pose)
-        self.AR.publish(True)
-    except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
-        rospy.logerr("TF Exception: %s", e)  
-    
-    # rospy.sleep(20) 
+  def publishPostPose(self, pX, pY, pZ, oX, oY, oZ, oW):
+        global postPose
+        found = True
 
-  def publishGatePose(self,corners, pX, pY,pZ, oX,oY,oZ, oW):
-    if len(corners) > 1:
-      global betweenPose
-      betweenPose = PoseStamped()
-      betweenPose.header.frame_id = "camera_link"
-      betweenPose.pose.position.x = pZ / 2
-      betweenPose.pose.position.y = pX / 2
-      betweenPose.pose.position.z = 0
+        postPose = PoseStamped()
+        postPose.header.frame_id = "camera_link"
+        postPose.pose.position.x = pZ
+        postPose.pose.position.y = pX
+        postPose.pose.position.z = 0
 
-      betweenPose.pose.orientation.x = 0
-      betweenPose.pose.orientation.y = 0
-      betweenPose.pose.orientation.z = oZ / 2
-      betweenPose.pose.orientation.w = oW / 2
-      self.between_pub.publish(betweenPose)
-      print("yes")
-      self.AR.publish(True)
+        postPose.pose.orientation.x = 0
+        postPose.pose.orientation.y = 0
+        postPose.pose.orientation.z = oZ
+        postPose.pose.orientation.w = oW
+
+        try:
+            listener = tf.TransformListener()
+            listener.waitForTransform('odom', 'camera_link', rospy.Time(0), rospy.Duration(1.0))
+            transformed_pose = listener.transformPose('odom', postPose)
+            print('\n')
+            print([transformed_pose.pose.position.x, transformed_pose.pose.position.y])
+            print('\n')
+            print("wtf")
+            if self.current_position:
+                distance = self.calculate_distance(self.current_position, transformed_pose.pose.position)
+                print(distance)
+                if distance < 8:
+                    rospy.set_param('/stop_all_nodes', True)
+                    stop_pose = PoseStamped()
+                    stop_pose.header.frame_id = "odom"
+                    stop_pose.pose.position = self.current_position
+                    stop_pose.pose.orientation = transformed_pose.pose.orientation
+                    self.between_pub.publish(stop_pose)
+                    rospy.signal_shutdown("Goal is within 8 meters of the current position. Shutting down node.")
+                    return
+
+            # Now publish the transformed pose in the odom frame
+            self.between_pub.publish(transformed_pose)
+            self.AR.publish(True)
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+            rospy.logerr("TF Exception: %s", e)
+
+  def publishGatePose(self, corners, pX, pY, pZ, oX, oY, oZ, oW):
+        if len(corners) > 1:
+            global betweenPose
+            betweenPose = PoseStamped()
+            betweenPose.header.frame_id = "camera_link"
+            betweenPose.pose.position.x = pZ / 2
+            betweenPose.pose.position.y = pX / 2
+            betweenPose.pose.position.z = 0
+
+            betweenPose.pose.orientation.x = 0
+            betweenPose.pose.orientation.y = 0
+            betweenPose.pose.orientation.z = oZ / 2
+            betweenPose.pose.orientation.w = oW / 2
+
+            if self.current_position:
+                distance = self.calculate_distance(self.current_position, betweenPose.pose.position)
+                if distance < 8:
+                    
+                    rospy.signal_shutdown("Goal is within 2 meters of the current position. Shutting down node.")
+                    return
+
+            self.between_pub.publish(betweenPose)
+            print("yes")
+            self.AR.publish(True)
+# ...existing c
       # rospy.sleep(20)
 
   def drawMarker(self, corners, ids, cv_image):
@@ -236,14 +271,20 @@ def main(args):
         mode = rospy.myargv()[1]
 
   rospy.init_node('image_converter', anonymous=True)
-
-  test_node = TestNode()
+  rospy.set_param('/stop_all_nodes', False)
+  # test_node = TestNode()
   ic = image_converter()
+  rate = rospy.Rate(10)
+  while not rospy.is_shutdown():
+      if rospy.has_param('/stop_all_nodes') and rospy.get_param('/stop_all_nodes'):
+          rospy.signal_shutdown("Received stop signal from another node.")
+      rate.sleep()
   try:
     rospy.spin()
+
   except KeyboardInterrupt:
     print("Shutting down")
   cv2.destroyAllWindows()
-
+  
 if __name__ == '__main__':
     main(sys.argv)

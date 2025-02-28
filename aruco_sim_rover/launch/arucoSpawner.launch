@@ -1,11 +1,11 @@
 <launch>
     <!-- Argument definitions for model, position, and orientation -->
     <arg name="x" default="4"/>
-    <arg name="y" default="2"/>
+    <arg name="y" default="0"/>
     <arg name="z" default="0"/>
     <arg name="roll" default="0"/>
     <arg name="pitch" default="0"/>
-    <arg name="yaw" default="1"/>
+    <arg name="yaw" default="0"/>
     <arg name="robot_name" default="aruco_sim_rover"/>
     <arg name="node_name" default="urdf_spawner"/>
     <arg name="model_name" default="arucoMarker1"/>
